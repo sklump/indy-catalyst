@@ -33,8 +33,8 @@ def get_random_password():
     return "".join([random.choice(ascii_lowercase + digits) for i in range(32)])
 
 def get_password_expiry():
-    now = datetime.utcnow().replace(tzinfo=pytz.utc)
-    return now + timedelta(days=90)
+    now = datetime.now()
+    return (now + timedelta(days=90)).date()
 
 
 class RegistrationSerializer(serializers.Serializer):
@@ -45,7 +45,7 @@ class RegistrationSerializer(serializers.Serializer):
     hook_token = serializers.CharField(required=False, max_length=240)
     username = serializers.CharField(required=False, max_length=40)
     password = serializers.CharField(required=True, max_length=40, write_only=True)
-    registration_expiry = serializers.DateTimeField(required=False, read_only=True)
+    registration_expiry = serializers.DateField(required=False, read_only=True)
 
     def create(self, validated_data):
         """
@@ -121,7 +121,9 @@ class SubscriptionSerializer(serializers.Serializer):
         Create and return a new instance, given the validated data.
         """
         # note owner is assigned in the view
-        credential_type = CredentialType.objects.filter(schema__name=validated_data['credential_type']).first()
+        print("validated_data['credential_type']", validated_data['credential_type'])
+        credential_type = CredentialType.objects.filter(schema__name=validated_data['credential_type']['schema']['name']).first()
+        print("credential_type", credential_type)
         validated_data['credential_type'] = credential_type
         return Subscription.objects.create(**validated_data)
 
