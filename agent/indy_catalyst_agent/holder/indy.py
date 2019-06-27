@@ -6,10 +6,15 @@ import logging
 import indy.anoncreds
 
 from .base import BaseHolder
+from ..storage import indy as indy_storage
+from ..storage.error import StorageNotFoundError
+from ..storage.record import StorageRecord
 
 
 class IndyHolder(BaseHolder):
     """Indy holder class."""
+
+    RECORD_TYPE_MIME_TYPES = 'MIME-types'
 
     def __init__(self, wallet):
         """
@@ -81,6 +86,41 @@ class IndyHolder(BaseHolder):
         )
 
         return credential_id
+
+    async def store_mime_types(
+        self, credential_definition: dict, mime_types: dict
+    ):
+        """
+        Store MIME type by attribute for input credential definition.
+
+        Args:
+            credential_definition: Credential definition
+            mime_types: dict mapping attribute name to MIME type (default 'text/plain')
+
+        """
+        cred_def_id = credential_definition['id']
+        indy_stor = indy_storage.IndyStorage(self.wallet.handle)
+        record = StorageRecord(
+            type=IndyHolder.RECORD_TYPE_MIME_TYPES,
+            value=cred_def_id,
+            tags={
+                attr: mime_types.get(attr, 'text/plain')
+                for attr in credential_definition['value']['primary']['r']
+                if attr != 'master_secret'
+            }
+        )
+
+        try:
+            existing_record = await indy_stor.get_record(
+                IndyHolder.RECORD_TYPE_MIME_TYPES,
+                cred_def_id
+            )
+            if existing_record.value == record.value:
+                return  # don't overwrite same data
+            await indy_stor.update_record_value(existing_record, record.value)
+            return
+        except StorageNotFoundError:
+            indy_stor.add_record(record)
 
     async def get_credentials(self, start: int, count: int, wql: dict):
         """

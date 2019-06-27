@@ -5,6 +5,9 @@ from aiohttp import web
 from ..messaging.actionmenu.routes import register as register_actionmenu
 from ..messaging.connections.routes import register as register_connections
 from ..messaging.credentials.routes import register as register_credentials
+from ..messaging.issue_credential.v1_0.routes import (
+    register as register_issue_credential_v1_0
+)
 from ..messaging.introduction.routes import register as register_introduction
 from ..messaging.presentations.routes import register as register_presentations
 from ..messaging.schemas.routes import register as register_schemas
@@ -26,6 +29,7 @@ async def register_module_routes(app: web.Application):
     await register_actionmenu(app)
     await register_connections(app)
     await register_credentials(app)
+    await register_issue_credential_v1_0(app)
     await register_introduction(app)
     await register_presentations(app)
     await register_schemas(app)
